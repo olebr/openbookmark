@@ -2,6 +2,9 @@
 define ("ABSOLUTE_PATH", dirname (__FILE__) . "/");
 require_once (ABSOLUTE_PATH . "lib/webstart.php");
 require_once (ABSOLUTE_PATH . "lib/lib.php");
+
+global $dbh;
+$dbh = null;
 ?>
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -39,23 +42,24 @@ if (intval(str_replace('.', '', phpversion())) < 500) {
 ############## database control ##############
 
 function create_table_bookmark () {
-		$query = "CREATE TABLE bookmark (
-			user char(20) NOT NULL default '',
-			title char(70) NOT NULL default '',
-			url char(200) NOT NULL default '',
-			description mediumtext default NULL,
-			private enum('0','1') default NULL,
-			date timestamp NOT NULL,
-			childof int(11) NOT NULL default '0',
-			id int(11) NOT NULL auto_increment,
-			deleted enum('0','1') NOT NULL default '0',
-			favicon varchar(200),
-			public enum('0','1') NOT NULL default '0',
-			PRIMARY KEY (id),
-			FULLTEXT KEY title (title,url,description)
-		) ENGINE=MyISAM";
+	global $dbh;
+	$query = "CREATE TABLE bookmark (
+		user char(20) NOT NULL default '',
+		title char(70) NOT NULL default '',
+		url char(200) NOT NULL default '',
+		description mediumtext default NULL,
+		private enum('0','1') default NULL,
+		date timestamp NOT NULL,
+		childof int(11) NOT NULL default '0',
+		id int(11) NOT NULL auto_increment,
+		deleted enum('0','1') NOT NULL default '0',
+		favicon varchar(200),
+		public enum('0','1') NOT NULL default '0',
+		PRIMARY KEY (id),
+		FULLTEXT KEY title (title,url,description)
+	) ENGINE=MyISAM";
 
-	if (mysqli_query ($mysql->dbh, $query)) {
+	if (mysqli_query($dbh, $query)) {
 		return true;
 	}
 	else {
@@ -64,6 +68,7 @@ function create_table_bookmark () {
 }
 
 function create_table_folder () {
+	global $dbh;
 	$query = "CREATE TABLE folder (
 			id int(11) NOT NULL auto_increment,
 			childof int(11) NOT NULL default '0',
@@ -74,7 +79,7 @@ function create_table_folder () {
 			UNIQUE KEY id (id)
 		) ENGINE=MyISAM;";
 
-	if (mysqli_query ($mysql->dbh, $query)) {
+	if (mysqli_query($dbh, $query)) {
 		return true;
 	}
 	else {
@@ -83,6 +88,7 @@ function create_table_folder () {
 }
 
 function create_table_user () {
+	global $dbh;
 	$query = "CREATE TABLE user (
 			username char(50) NOT NULL default '',
 			password char(50) NOT NULL default '',
@@ -110,7 +116,7 @@ function create_table_user () {
 			UNIQUE KEY id (username)
 		) ENGINE=MyISAM;";
 
-	if (mysqli_query ($this->dbh, $query)) {
+	if (mysqli_query($dbh, $query)) {
 		return true;
 	}
 	else {
@@ -119,10 +125,11 @@ function create_table_user () {
 }
 
 function create_admin_user () {
+	global $dbh;
 	$query = "INSERT INTO user (username, password, admin)
 			  VALUES ('admin', MD5('admin'), '1');";
 
-	if (mysqli_query ($this->dbh, $query)) {
+	if (mysqli_query ($dbh, $query)) {
 		return true;
 	}
 	else {
@@ -159,7 +166,7 @@ function print_msg ($message, $type = "") {
 function check_table_version ($table, $field) {
 	$query = "DESC $table";
 	$return = false;
-	if ($result = mysqli_query ($this->dbh, $query)) {
+	if ($result = mysqli_query ($dbh, $query)) {
 		while ($row = mysqli_fetch_row($result)) {
 			if ($row[0] == $field) {
 				$return = true;
@@ -176,7 +183,7 @@ function upgrade_table ($table, $field, $query) {
 	}
 	else {
 		print_msg ("Table $table does not contain $field field, attempting to upgrade", "notice");
-		if (mysqli_query ($this->dbh, $query)) {
+		if (mysqli_query ($dbh, $query)) {
 			print_msg ("Table $table altered, $field added.", "success");
 		}
 		else {
@@ -295,33 +302,31 @@ function html_db () {
 
 if ($submit) {
 	if ($mysql_db_create) {
-		if (! $dbh= mysqli_connect ($mysql_hostname, $mysql_db_su_username, $mysql_db_su_password)) {
+		if (! $dbh = mysqli_connect($mysql_hostname, $mysql_db_su_username, $mysql_db_su_password)) {
 			html_db ();
-			print_msg (mysql_error (), "error");
+			print_msg (mysqli_error($dbh), "error");
 			require_once (ABSOLUTE_PATH . "footer.php");
 		}
 		else {
-			if (mysql_query ("CREATE DATABASE $mysql_db_name")) {
+			if (mysqli_query($dbh, "CREATE DATABASE $mysql_db_name")) {
 				print_msg ("Database $mysql_db_name created", "success");
 			}
 			else {
-				html_db ();
-				print_msg (mysql_error (), "error");
+				html_db();
+				print_msg(mysql_error($dbh), "error");
 				require_once (ABSOLUTE_PATH . "footer.php");
 			}
 
-			if (mysql_query ("GRANT ALL PRIVILEGES ON $mysql_db_name.* TO '$mysql_db_username'@'$mysql_hostname' IDENTIFIED BY '$mysql_db_password'")) {
+			if (mysqli_query($dbh, "GRANT ALL PRIVILEGES ON $mysql_db_name.* TO '$mysql_db_username'@'$mysql_hostname' IDENTIFIED BY '$mysql_db_password'")) {
 				print_msg ("User $mysql_db_username created", "success");
 			}
 			else {
 				html_db ();
-				print_msg (mysql_error (), "error");
+				print_msg (mysqli_error($dbh), "error");
 				require_once (ABSOLUTE_PATH . "footer.php");
 			}
 		}
 	}
-
-	mysqli_close($dbh);
 
 	$dsn = array(
 		'db_username' => $mysql_db_username,
@@ -330,7 +335,6 @@ if ($submit) {
 		'db_name'     => $mysql_db_name,
 	);
 
-	$dbh = null;
 	if (! $dbh = mysqli_connect ($dsn['db_hostname'], $dsn['db_username'], $dsn['db_password'])) {
 		html_db ();
 		print_msg (mysqli_error ($dbh), "error");
@@ -346,7 +350,7 @@ if ($submit) {
 
 			$query = "SHOW TABLES";
 			$tables = array ();
-			$result = mysqli_query ($query);
+			$result = mysqli_query($dbh, $query);
 
 			while ($row = mysqli_fetch_row($result)) {
 				array_push ($tables, $row[0]);
@@ -377,7 +381,7 @@ if ($submit) {
 					print_msg ("Table folder created", "success");
 				}
 				else {
-					print_msg (mysqli_error ($this->dbh), "error");
+					print_msg (mysqli_error ($dbh), "error");
 				}
 			}
 			else {
@@ -399,7 +403,7 @@ if ($submit) {
 					}
 				}
 				else {
-					print_msg (mysqli_error ($this->dbh), "error");
+					print_msg (mysqli_error ($dbh), "error");
 				}
 			}
 			else {

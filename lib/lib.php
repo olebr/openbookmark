@@ -354,7 +354,7 @@ function check_username ($username) {
 		$query = sprintf ("SELECT COUNT(*) FROM user WHERE md5(username)=md5('%s')",
 			$mysql->escape ($username));
 		if ($mysql->query ($query)) {
-			if (mysql_result ($mysql->result, 0) == 1) {
+			if (mysqli_result ($mysql->result, 0) == 1) {
 				$return = true;
 			}
 		}
@@ -369,7 +369,7 @@ function admin_only () {
                        AND username='%s'",
                        $mysql->escape ($username));
     if ($mysql->query ($query)) {
-        if (mysql_result ($mysql->result, 0) == "1") {
+        if (mysqli_result ($mysql->result, 0) == "1") {
             $return = true;
         }
     }
@@ -474,8 +474,8 @@ function object_count () {
 	                 $mysql->escape ($username));
 
 	if ($mysql->query ($query)) {
-		if (mysql_num_rows ($mysql->result) == "1") {
-			$row = mysql_fetch_object ($mysql->result);
+		if (mysqli_num_rows ($mysql->result) == "1") {
+			$row = mysqli_fetch_object ($mysql->result);
 			$return = "You have $row->bookmarks Bookmarks and $row->folders Folders";
 		}
 	}

@@ -199,7 +199,7 @@ $order = set_get_order ();
 
 	          if ($mysql->query ($query)) {
 	                  $bookmarks = array ();
-	                  while ($row = mysql_fetch_assoc ($mysql->result)) {
+	                  while ($row = mysqli_fetch_assoc ($mysql->result)) {
 	                          array_push ($bookmarks, $row);
 	                  }
 	                  if (count ($bookmarks) > 0) {
@@ -292,7 +292,7 @@ $order = set_get_order ();
 
 							if ($mysql->query ($query)) {
 								$bookmarks = array ();
-								while ($row = mysql_fetch_assoc ($mysql->result)) {
+								while ($row = mysqli_fetch_assoc ($mysql->result)) {
 									array_push ($bookmarks, $row);
 								}
 								list_bookmarks ($bookmarks,

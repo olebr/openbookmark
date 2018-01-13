@@ -1,9 +1,11 @@
 <?php
+/*
 header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 header("Cache-Control: no-store, no-cache, must-revalidate"); // HTTP/1.1
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache"); // HTTP/1.0
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the past
+*/
 ?>
 
 <?php
@@ -54,7 +56,7 @@ class folder {
 		$query = sprintf ("SELECT id, childof, name, public FROM folder WHERE user='%s' AND deleted!='1' ORDER BY name",
 			$mysql->escape ($_SESSION['username']));
 		if ($mysql->query ($query)) {
-			while ($row = mysql_fetch_assoc ($mysql->result)) {
+			while ($row = mysqli_fetch_assoc ($mysql->result)) {
 				$this->folders[$row['id']] = $row;
 				if (!isset ($this->children[$row['childof']])) {
 					$this->children[$row['childof']] = array ();
@@ -85,7 +87,7 @@ class folder {
 			# 1) $children containing arrays with children. the keys of these arrays are the id's of the parents
 			# 2) $folders containing arrays with folder settings (id, childof, name, public)
 			$shared_children = array ();
-			while ($row = mysql_fetch_assoc ($mysql->result)) {
+			while ($row = mysqli_fetch_assoc ($mysql->result)) {
 				$this->folders[$row['id']] = $row;
 				if (!isset ($this->children[$row['childof']])) {
 					$this->children[$row['childof']] = array ();

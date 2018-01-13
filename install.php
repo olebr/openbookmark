@@ -55,7 +55,7 @@ function create_table_bookmark () {
 			FULLTEXT KEY title (title,url,description)
 		) ENGINE=MyISAM";
 
-	if (mysql_query ($query)) {
+	if (mysqli_query ($mysql->dbh, $query)) {
 		return true;
 	}
 	else {
@@ -74,7 +74,7 @@ function create_table_folder () {
 			UNIQUE KEY id (id)
 		) ENGINE=MyISAM;";
 
-	if (mysql_query ($query)) {
+	if (mysqli_query ($mysql->dbh, $query)) {
 		return true;
 	}
 	else {
@@ -110,7 +110,7 @@ function create_table_user () {
 			UNIQUE KEY id (username)
 		) ENGINE=MyISAM;";
 
-	if (mysql_query ($query)) {
+	if (mysqli_query ($this->dbh, $query)) {
 		return true;
 	}
 	else {
@@ -119,10 +119,10 @@ function create_table_user () {
 }
 
 function create_admin_user () {
-	$query = "INSERT INTO user (username, password, admin) 
+	$query = "INSERT INTO user (username, password, admin)
 			  VALUES ('admin', MD5('admin'), '1');";
 
-	if (mysql_query ($query)) {
+	if (mysqli_query ($this->dbh, $query)) {
 		return true;
 	}
 	else {
@@ -159,8 +159,8 @@ function print_msg ($message, $type = "") {
 function check_table_version ($table, $field) {
 	$query = "DESC $table";
 	$return = false;
-	if ($result = mysql_query ($query)) {
-		while ($row = mysql_fetch_row ($result)) {
+	if ($result = mysqli_query ($this->dbh, $query)) {
+		while ($row = mysqli_fetch_row($result)) {
 			if ($row[0] == $field) {
 				$return = true;
 				break;
@@ -176,7 +176,7 @@ function upgrade_table ($table, $field, $query) {
 	}
 	else {
 		print_msg ("Table $table does not contain $field field, attempting to upgrade", "notice");
-		if (mysql_query ($query)) {
+		if (mysqli_query ($this->dbh, $query)) {
 			print_msg ("Table $table altered, $field added.", "success");
 		}
 		else {
@@ -190,16 +190,16 @@ function upgrade_table ($table, $field, $query) {
 
 function html_db () {
 	global $mysql_hostname,
-	       $mysql_db_name, 
-	       $mysql_db_username, 
-	       $mysql_db_su_username, 
-	       $cookie_name, 
-	       $cookie_domain, 
-	       $cookie_path, 
-	       $cookie_seed, 
+	       $mysql_db_name,
+	       $mysql_db_username,
+	       $mysql_db_su_username,
+	       $cookie_name,
+	       $cookie_domain,
+	       $cookie_path,
+	       $cookie_seed,
 	       $cookie_expire;
 	?>
-	
+
 	<h3>Database connection:</h3>
 
 	<form method="POST" action="<?php echo $_SERVER['SCRIPT_NAME']; ?>">
@@ -289,13 +289,13 @@ function html_db () {
 		</tr>
 	</table>
 	</form>
-	
+
 	<?php
 }
 
 if ($submit) {
 	if ($mysql_db_create) {
-		if (! @mysql_connect ($mysql_hostname, $mysql_db_su_username, $mysql_db_su_password)) {
+		if (! $dbh= mysqli_connect ($mysql_hostname, $mysql_db_su_username, $mysql_db_su_password)) {
 			html_db ();
 			print_msg (mysql_error (), "error");
 			require_once (ABSOLUTE_PATH . "footer.php");
@@ -321,7 +321,7 @@ if ($submit) {
 		}
 	}
 
-	@mysql_close ();
+	mysqli_close($dbh);
 
 	$dsn = array(
 		'db_username' => $mysql_db_username,
@@ -330,14 +330,15 @@ if ($submit) {
 		'db_name'     => $mysql_db_name,
 	);
 
-	if (! @mysql_connect ($dsn['db_hostname'], $dsn['db_username'], $dsn['db_password'])) {
+	$dbh = null;
+	if (! $dbh = mysqli_connect ($dsn['db_hostname'], $dsn['db_username'], $dsn['db_password'])) {
 		html_db ();
-		print_msg (mysql_error (), "error");
+		print_msg (mysqli_error ($dbh), "error");
 	}
 	else {
-		if (! @mysql_select_db ($dsn['db_name'])) {
+		if (! mysqli_select_db($dbh, $dsn['db_name'])) {
 			html_db ();
-			print_msg (mysql_error (), "error");
+			print_msg (mysqli_error($dbh), "error");
 		}
 		else {
 			############## DB support ##############
@@ -345,9 +346,9 @@ if ($submit) {
 
 			$query = "SHOW TABLES";
 			$tables = array ();
-			$result = mysql_query ($query);
+			$result = mysqli_query ($query);
 
-			while ($row = mysql_fetch_row ($result)) {
+			while ($row = mysqli_fetch_row($result)) {
 				array_push ($tables, $row[0]);
 			}
 
@@ -357,12 +358,12 @@ if ($submit) {
 					print_msg ("Table bookmark created", "success");
 				}
 				else {
-					print_msg (mysql_error (), "error");
+					print_msg (mysqli_error($dbh), "error");
 				}
 			}
 			else {
 				print_msg ("Table bookmark exists, checking for version:", "notice");
-				
+
 				# check for favicon support
 				upgrade_table ("bookmark", "favicon", "ALTER TABLE bookmark ADD COLUMN favicon varchar(200)");
 
@@ -376,7 +377,7 @@ if ($submit) {
 					print_msg ("Table folder created", "success");
 				}
 				else {
-					print_msg (mysql_error (), "error");
+					print_msg (mysqli_error ($this->dbh), "error");
 				}
 			}
 			else {
@@ -398,7 +399,7 @@ if ($submit) {
 					}
 				}
 				else {
-					print_msg (mysql_error (), "error");
+					print_msg (mysqli_error ($this->dbh), "error");
 				}
 			}
 			else {
@@ -418,7 +419,7 @@ if ($submit) {
 			}
 
 			############## favicon support ##############
-		
+
 			if ($convert = @exec ('which convert')) {
 				$convert_favicons = "true";
 				print_msg ("ImageMagick convert found: $convert", "success");
@@ -428,7 +429,7 @@ if ($submit) {
 				$convert_favicons = "false";
 				print_msg ("ImageMagick convert not found. Make sure ImageMagick is installed and specify location of convert manually or set \$convert_favicons to false.", "error");
 			}
-		
+
 			if ($identify = @exec ('which identify')) {
 				$convert_favicons = "true";
 				print_msg ("ImageMagick identify found: $identify", "success");
@@ -438,7 +439,7 @@ if ($submit) {
 				$convert_favicons = "false";
 				print_msg ("ImageMagick identify not found. Make sure ImageMagick is installed and specify location of identify manually or set \$convert_favicons to false.", "error");
 			}
-		
+
 			if (is_writable ("./favicons/")) {
 				print_msg ("./favicons directory is writable by the webserver, good.", "success");
 			}
@@ -469,7 +470,7 @@ $cookie = array (
 );
 
 # Feel free to add values to this list as you like
-# according to the PHP documentation 
+# according to the PHP documentation
 # http://www.php.net/manual/en/function.date.php
 $date_formats = array (
 	\'d/m/Y\',

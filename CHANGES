@@ -1,3 +1,12 @@
+13.01.2018, (github.com/olebr)
+- forked from github.com / sogen/openbookmark
+  version (at commit) 7311dbd dated 10th of Decemer 2016.
+- Made the code php7 compatible in a hurry:
+   * MySqli: replacing mysql_* with mysqli_ functions
+	* constructor should be called __constructur
+	* Removed some header functions, since they was duplicate
+	  and made header already sent errors
+
 16.04.2008, Version 0.8.8 beta
 - New design.
 - Added the possibility to change the public/private status on multiple

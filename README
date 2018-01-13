@@ -1,2 +1,4 @@
 Based on Online-Bookmarks, OpenBookmark is a complete interface overhaul 
 to use modern javascript libraries and bring mobile compatibility
+
+2018.01.13 : made php7 compatible, see more in CHANGES
